@@ -1,0 +1,92 @@
+atc-cns-maintenance-system/
+├── backend/
+│   ├── src/
+│   │   ├── config/
+│   │   │   ├── constants.js
+│   │   │   ├── database.js
+│   │   ├── controllers/
+│   │   │   ├── authController.js
+│   │   │   ├── dashboardController.js
+│   │   │   ├── groupController.js
+│   │   │   ├── incidentController.js
+│   │   │   ├── sparePartController.js
+│   │   │   ├── systemController.js
+│   │   │   ├── taskController.js
+│   │   │   ├── trainingController.js
+│   │   │   └── userController.js
+│   │   ├── middleware/
+│   │   │   ├── auth.js
+│   │   │   ├── errorHandler.js
+│   │   │   └── validation.js
+│   │   ├── models/
+│   │   │   ├── activityLogModel.js
+│   │   │   ├── groupModel.js
+│   │   │   ├── incidentModel.js
+│   │   │   ├── sparePartModel.js
+│   │   │   ├── systemModel.js
+│   │   │   ├── taskModel.js
+│   │   │   ├── trainingModel.js
+│   │   │   └── userModel.js
+│   │   ├── routes/
+│   │   │   ├── authRoutes.js
+│   │   │   ├── dashboardRoutes.js
+│   │   │   ├── groupRoutes.js
+│   │   │   ├── incidentRoutes.js
+│   │   │   ├── sparePartRoutes.js
+│   │   │   ├── systemRoutes.js
+│   │   │   ├── taskRoutes.js
+│   │   │   ├── trainingRoutes.js
+│   │   │   └── userRoutes.js
+│   │   └── utils/
+│   │       ├── cronJobs.js
+│   │       ├── helpers.js
+│   │       └── logger.js
+│   ├── scripts/
+│   │   ├── createAdmin.js
+│   │   └── seedDatabase.js
+│   ├── uploads/
+│   │   └── .gitkeep
+│   ├── .env
+│   ├── package.json
+│   └── server.js
+├── frontend/
+│   ├── css/
+│   │   ├── style.css
+│   │   ├── dashboard.css
+│   │   └── calendar.css
+│   ├── js/
+│   │   ├── app.js
+│   │   ├── auth.js
+│   │   ├── api.js
+│   │   ├── dashboard.js
+│   │   ├── systems.js
+│   │   ├── tasks.js
+│   │   ├── incidents.js
+│   │   ├── spareparts.js
+│   │   ├── users.js
+│   │   ├── groups.js
+│   │   ├── profile.js
+│   │   └── calendar.js
+│   ├── pages/
+│   │   ├── login.html
+│   │   ├── dashboard.html
+│   │   ├── systems.html
+│   │   ├── system-details.html
+│   │   ├── tasks.html
+│   │   ├── task-details.html
+│   │   ├── calendar.html
+│   │   ├── incidents.html
+│   │   ├── incident-details.html
+│   │   ├── spare-parts.html
+│   │   ├── users.html
+│   │   ├── groups.html
+│   │   ├── profile.html
+│   │   └── settings.html
+│   ├── index.html
+│   └── assets/
+│       └── images/
+├── docker-compose.yml
+├── Dockerfile.backend
+├── Dockerfile.frontend
+├── .gitignore
+└── README.md

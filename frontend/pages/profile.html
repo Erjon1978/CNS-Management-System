@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - CNS Management System</title>
+    <link href="../node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/bootstrap-icons/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="dashboard.html">
+                <i class="bi bi-airplane"></i> CNS Management System
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <span class="nav-link" id="userDisplay">
+                            <i class="bi bi-person-circle"></i> 
+                            <span id="userName">Loading...</span>
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="logout(); return false;">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav id="sidebar" class="col-md-2 d-none d-md-block bg-dark sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="dashboard.html">
+                                <i class="bi bi-grid-1x2-fill"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="systems.html">
+                                <i class="bi bi-server"></i> Systems
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="tasks.html">
+                                <i class="bi bi-list-task"></i> Tasks
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="calendar.html">
+                                <i class="bi bi-calendar-event"></i> Calendar
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="incidents.html">
+                                <i class="bi bi-exclamation-triangle"></i> Incidents
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="spare-parts.html">
+                                <i class="bi bi-box-seam"></i> Spare Parts
+                            </a>
+                        </li>
+                        <li class="nav-item" id="adminMenu" style="display:none;">
+                            <hr class="border-secondary">
+                            <li class="nav-item">
+                                <a class="nav-link" href="users.html">
+                                    <i class="bi bi-people"></i> Users
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="groups.html">
+                                    <i class="bi bi-people-fill"></i> Groups
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="settings.html">
+                                    <i class="bi bi-gear"></i> Settings
+                                </a>
+                            </li>
+                        </li>
+                        <hr class="border-secondary">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="profile.html">
+                                <i class="bi bi-person-circle"></i> Profile
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="col-md-10 ms-sm-auto px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Profile</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshProfile()">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div id="profileContent">
+                    <!-- Profile content will be loaded here -->
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="../node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../node_modules/axios/dist/axios.min.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../js/profile.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initAuth();
+            const user = getCurrentUser();
+            if (user) {
+                document.getElementById('userName').textContent = `${user.firstName} ${user.lastName}`;
+                if (isAdmin() || isManager()) {
+                    document.getElementById('adminMenu').style.display = 'block';
+                }
+                loadProfileContent();
+            }
+        });
+
+        async function loadProfileContent() {
+            const container = document.getElementById('profileContent');
+            await loadProfile(container);
+        }
+
+        function refreshProfile() {
+            loadProfileContent();
+        }
+    </script>
+</body>
+</html>

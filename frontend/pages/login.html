@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ATC CNS Maintenance System</title>
+    <link href="../node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet"">
+    <link rel="stylesheet" href="/bootstrap-icons/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="bg-light">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-5 col-lg-4">
+                <div class="text-center mt-5 mb-4">
+                    <i class="bi bi-airplane display-4 text-dark"></i>
+                    <h1 class="h4 mt-2">ATC CNS Maintenance</h1>
+                </div>
+                <div class="card shadow-sm">
+                    <div class="card-body p-4">
+                        <h2 class="h5 card-title mb-3">Sign in</h2>
+
+                        <div id="loginError" class="alert alert-danger d-none" role="alert"></div>
+
+                        <form id="loginForm" onsubmit="handleLogin(event); return false;">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" autocomplete="username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" autocomplete="current-password" required>
+                            </div>
+                            <button type="submit" class="btn btn-dark w-100">
+                                <i class="bi bi-box-arrow-in-right"></i> Sign in
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../node_modules/axios/dist/axios.min.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        async function handleLogin(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('loginError');
+
+            try {
+                errorDiv.classList.add('d-none');
+
+                const response = await API.post('/auth/login', { username, password });
+
+                // Store token and user info
+                setAuthToken(response.token);
+                localStorage.setItem('user', JSON.stringify({
+                    id: response._id,
+                    username: response.username,
+                    firstName: response.firstName,
+                    lastName: response.lastName,
+                    role: response.role,
+                    group: response.group
+                }));
+
+                // Redirect to dashboard
+                window.location.href = '/pages/dashboard.html';
+
+            } catch (error) {
+                errorDiv.textContent = error.message || 'Login failed. Please try again.';
+                errorDiv.classList.remove('d-none');
+            }
+        }
+
+        // Check if already logged in
+        if (isAuthenticated()) {
+            window.location.href = '/pages/dashboard.html';
+        }
+    </script>
+</body>
+</html>

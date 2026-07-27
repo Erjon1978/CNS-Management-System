@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - CNS Management System</title>
+    <link href="../node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/bootstrap-icons/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="dashboard.html">
+                <i class="bi bi-airplane"></i> CNS Management System
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <span class="nav-link" id="userDisplay">
+                            <i class="bi bi-person-circle"></i> 
+                            <span id="userName">Loading...</span>
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="logout(); return false;">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav id="sidebar" class="col-md-2 d-none d-md-block bg-dark sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="dashboard.html">
+                                <i class="bi bi-grid-1x2-fill"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="systems.html">
+                                <i class="bi bi-server"></i> Systems
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="tasks.html">
+                                <i class="bi bi-list-task"></i> Tasks
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="calendar.html">
+                                <i class="bi bi-calendar-event"></i> Calendar
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="incidents.html">
+                                <i class="bi bi-exclamation-triangle"></i> Incidents
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="spare-parts.html">
+                                <i class="bi bi-box-seam"></i> Spare Parts
+                            </a>
+                        </li>
+                        <li class="nav-item" id="adminMenu" style="display:block;">
+                            <hr class="border-secondary">
+                            <li class="nav-item">
+                                <a class="nav-link" href="users.html">
+                                    <i class="bi bi-people"></i> Users
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="groups.html">
+                                    <i class="bi bi-people-fill"></i> Groups
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active" href="settings.html">
+                                    <i class="bi bi-gear"></i> Settings
+                                </a>
+                            </li>
+                        </li>
+                        <hr class="border-secondary">
+                        <li class="nav-item">
+                            <a class="nav-link" href="profile.html">
+                                <i class="bi bi-person-circle"></i> Profile
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="col-md-10 ms-sm-auto px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Settings</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshSettings()">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div id="settingsContent">
+                    <!-- Settings content will be loaded here -->
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="../node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../node_modules/axios/dist/axios.min.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initAuth();
+            const user = getCurrentUser();
+            if (user) {
+                document.getElementById('userName').textContent = `${user.firstName} ${user.lastName}`;
+                if (isAdmin() || isManager()) {
+                    document.getElementById('adminMenu').style.display = 'block';
+                }
+                loadSettingsContent();
+            }
+        });
+
+        async function loadSettingsContent() {
+            const container = document.getElementById('settingsContent');
+            
+            // Check if user is admin
+            if (!isAdmin()) {
+                container.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        Access denied. Admin privileges required.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">System Settings</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">System Name</label>
+                                    <input type="text" class="form-control" value="ATC CNS Maintenance System">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">System Version</label>
+                                    <input type="text" class="form-control" value="1.0.0" disabled>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Maintenance Mode</label>
+                                    <select class="form-select">
+                                        <option value="false">Normal</option>
+                                        <option value="true">Maintenance</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">Email Settings</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">SMTP Server</label>
+                                    <input type="text" class="form-control" placeholder="smtp.example.com">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">SMTP Port</label>
+                                    <input type="text" class="form-control" placeholder="587">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">From Email</label>
+                                    <input type="email" class="form-control" placeholder="noreply@atc-system.com">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">Security Settings</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">Session Timeout (minutes)</label>
+                                            <input type="number" class="form-control" value="30">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">Max Login Attempts</label>
+                                            <input type="number" class="form-control" value="5">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">Password Expiry (days)</label>
+                                            <input type="number" class="form-control" value="90">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="twoFactorAuth" checked>
+                                    <label class="form-check-label" for="twoFactorAuth">
+                                        Enable Two-Factor Authentication
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">Backup & Maintenance</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Auto Backup Frequency</label>
+                                            <select class="form-select">
+                                                <option value="daily">Daily</option>
+                                                <option value="weekly" selected>Weekly</option>
+                                                <option value="monthly">Monthly</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Backup Retention (days)</label>
+                                            <input type="number" class="form-control" value="30">
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary me-2">
+                                    <i class="bi bi-download"></i> Download Backup
+                                </button>
+                                <button class="btn btn-warning">
+                                    <i class="bi bi-arrow-repeat"></i> Run Maintenance
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">System Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <p><strong>Version:</strong> 1.0.0</p>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <p><strong>Environment:</strong> Production</p>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <p><strong>Database:</strong> MongoDB</p>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <p><strong>Status:</strong> <span class="badge bg-success">Online</span></p>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-4">
+                                        <p><strong>Total Users:</strong> <span id="totalUsers">-</span></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p><strong>Total Systems:</strong> <span id="totalSystems">-</span></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p><strong>Total Incidents:</strong> <span id="totalIncidents">-</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Load stats
+            try {
+                const stats = await API.get('/dashboard/stats');
+                document.getElementById('totalUsers').textContent = stats.totalUsers || 0;
+                document.getElementById('totalSystems').textContent = stats.totalSystems || 0;
+                document.getElementById('totalIncidents').textContent = stats.activeIncidents || 0;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        function refreshSettings() {
+            loadSettingsContent();
+        }
+    </script>
+</body>
+</html>

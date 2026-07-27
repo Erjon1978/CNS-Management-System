@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Details - ATC CNS Maintenance System</title>
+    <link href="../node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/bootstrap-icons/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="dashboard.html">
+                <i class="bi bi-airplane"></i> ATC CNS Maintenance
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <span class="nav-link" id="userDisplay">
+                            <i class="bi bi-person-circle"></i> 
+                            <span id="userName">Loading...</span>
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="logout(); return false;">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav id="sidebar" class="col-md-2 d-none d-md-block bg-dark sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="dashboard.html">
+                                <i class="bi bi-grid-1x2-fill"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="systems.html">
+                                <i class="bi bi-server"></i> Systems
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="tasks.html">
+                                <i class="bi bi-list-task"></i> Tasks
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="calendar.html">
+                                <i class="bi bi-calendar-event"></i> Calendar
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="incidents.html">
+                                <i class="bi bi-exclamation-triangle"></i> Incidents
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="spare-parts.html">
+                                <i class="bi bi-box-seam"></i> Spare Parts
+                            </a>
+                        </li>
+                        <li class="nav-item" id="adminMenu" style="display:none;">
+                            <hr class="border-secondary">
+                            <li class="nav-item">
+                                <a class="nav-link" href="users.html">
+                                    <i class="bi bi-people"></i> Users
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="groups.html">
+                                    <i class="bi bi-people-fill"></i> Groups
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="settings.html">
+                                    <i class="bi bi-gear"></i> Settings
+                                </a>
+                            </li>
+                        </li>
+                        <hr class="border-secondary">
+                        <li class="nav-item">
+                            <a class="nav-link" href="profile.html">
+                                <i class="bi bi-person-circle"></i> Profile
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="col-md-10 ms-sm-auto px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2" id="taskTitle">Task Details</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <a href="tasks.html" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Tasks
+                        </a>
+                    </div>
+                </div>
+
+                <div id="taskDetailsContent">
+                    <!-- Task details will be loaded here -->
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="../node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../node_modules/axios/dist/axios.min.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../js/tasks.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initAuth();
+            const user = getCurrentUser();
+            if (user) {
+                document.getElementById('userName').textContent = `${user.firstName} ${user.lastName}`;
+                if (isAdmin() || isManager()) {
+                    document.getElementById('adminMenu').style.display = 'block';
+                }
+                
+                // Get task ID from URL parameter
+                const urlParams = new URLSearchParams(window.location.search);
+                const taskId = urlParams.get('id');
+                
+                if (taskId) {
+                    loadTaskDetails(taskId);
+                } else {
+                    document.getElementById('taskDetailsContent').innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i> No task selected.
+                            <a href="tasks.html" class="alert-link">Go back to tasks</a>
+                        </div>
+                    `;
+                }
+            }
+        });
+
+        async function loadTaskDetails(taskId) {
+            const container = document.getElementById('taskDetailsContent');
+            try {
+                const task = await API.get(`/tasks/${taskId}`);
+                
+                document.getElementById('taskTitle').textContent = task.title;
+                
+                container.innerHTML = `
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Task Information</h6>
+                                    <p><strong>Type:</strong> ${task.taskType?.replace('_', ' ')}</p>
+                                    <p><strong>Priority:</strong> <span class="badge bg-${getPriorityColor(task.priority)}">${task.priority}</span></p>
+                                    <p><strong>Status:</strong> <span class="badge bg-${getStatusColor(task.status)}">${task.status}</span></p>
+                                    <p><strong>System:</strong> ${task.system?.name || 'N/A'}</p>
+                                    <p><strong>Assigned To:</strong> ${task.assignedTo ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}` : 'Unassigned'}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Schedule</h6>
+                                    <p><strong>Start Date:</strong> ${task.startDate ? new Date(task.startDate).toLocaleString() : 'N/A'}</p>
+                                    <p><strong>Due Date:</strong> ${task.dueDate ? new Date(task.dueDate).toLocaleString() : 'N/A'}</p>
+                                    <p><strong>Estimated Duration:</strong> ${task.estimatedDuration ? `${task.estimatedDuration} hours` : 'N/A'}</p>
+                                    <p><strong>Schedule Type:</strong> ${task.scheduleType?.replace('_', ' ')}</p>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row">
+                                <div class="col-12">
+                                    <h6>Description</h6>
+                                    <p>${task.description || 'No description provided'}</p>
+                                </div>
+                            </div>
+                            ${task.checklist && task.checklist.length > 0 ? `
+                                <hr>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <h6>Checklist</h6>
+                                        ${task.checklist.map(item => `
+                                            <div class="checklist-item ${item.completed ? 'completed' : ''}">
+                                                <input type="checkbox" ${item.completed ? 'checked' : ''} disabled>
+                                                ${item.item}
+                                                ${item.completed ? `<small class="text-muted"> - Completed by ${item.completedBy?.firstName || ''}</small>` : ''}
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            ${task.completionReport ? `
+                                <hr>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <h6>Completion Report</h6>
+                                        <p><strong>Report #:</strong> ${task.completionReport.reportNumber}</p>
+                                        <p><strong>Summary:</strong> ${task.completionReport.summary}</p>
+                                        <p><strong>Recommendations:</strong> ${task.completionReport.recommendations || 'None'}</p>
+                                        <p><strong>Submitted:</strong> ${task.completionReport.submittedAt ? new Date(task.completionReport.submittedAt).toLocaleString() : 'N/A'}</p>
+                                    </div>
+                                </div>
+                            ` : ''}
+                            <div class="mt-3">
+                                <a href="tasks.html" class="btn btn-secondary">Back to Tasks</a>
+                                ${isManager() ? `
+                                    <button class="btn btn-primary" onclick="editTask('${task._id}')">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </button>
+                                    <button class="btn btn-success" onclick="updateTaskStatus('${task._id}', 'completed')">
+                                        <i class="bi bi-check-circle"></i> Complete
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="alert alert-danger">
+                        Failed to load task details: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Helper function for status color
+        function getStatusColor(status) {
+            const colors = {
+                draft: 'secondary',
+                pending_approval: 'warning',
+                approved: 'info',
+                in_progress: 'primary',
+                awaiting_part: 'warning',
+                completed: 'success',
+                cancelled: 'danger',
+                on_hold: 'secondary'
+            };
+            return colors[status] || 'secondary';
+        }
+
+        // Helper function for priority color
+        function getPriorityColor(priority) {
+            const colors = {
+                critical: 'danger',
+                high: 'warning',
+                medium: 'info',
+                low: 'success'
+            };
+            return colors[priority] || 'secondary';
+        }
+    </script>
+</body>
+</html>

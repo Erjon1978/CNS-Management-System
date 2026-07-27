@@ -1,0 +1,24 @@
+{
+  "name": "atc-cns-frontend",
+  "version": "1.0.0",
+  "description": "ATC CNS Maintenance System Frontend",
+  "license": "MIT",
+  "author": "Erjon Xama",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "axios": "^1.18.1",
+    "bootstrap": "^5.2.3",
+    "bootstrap-icons": "^1.13.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "http-proxy-middleware": "^4.2.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

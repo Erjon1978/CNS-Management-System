@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATC CNS Maintenance System</title>
+    <script src="js/auth.js"></script>
+    <script>
+        // Entry point: send the user to the right place based on auth state.
+        window.location.replace(isAuthenticated() ? '/pages/dashboard.html' : '/pages/login.html');
+    </script>
+</head>
+<body>
+</body>
+</html>

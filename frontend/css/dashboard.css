@@ -1,0 +1,341 @@
+/* Dashboard Specific Styles */
+
+/* Stats Cards */
+.dashboard-stats {
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    border-left: 4px solid var(--primary-color);
+    height: 100%;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card .stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.stat-card .stat-icon.blue {
+    background: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+}
+
+.stat-card .stat-icon.green {
+    background: rgba(25, 135, 84, 0.1);
+    color: #198754;
+}
+
+.stat-card .stat-icon.yellow {
+    background: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+}
+
+.stat-card .stat-icon.red {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+.stat-card .stat-icon.purple {
+    background: rgba(111, 66, 193, 0.1);
+    color: #6f42c1;
+}
+
+.stat-card .stat-icon.orange {
+    background: rgba(253, 126, 20, 0.1);
+    color: #fd7e14;
+}
+
+.stat-card .stat-number {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.stat-card .stat-label {
+    color: #6c757d;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.stat-card .stat-change {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.stat-card .stat-change.positive {
+    color: #198754;
+}
+
+.stat-card .stat-change.negative {
+    color: #dc3545;
+}
+
+.stat-card .stat-change.neutral {
+    color: #6c757d;
+}
+
+/* Chart Containers */
+.chart-wrapper {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+}
+
+.chart-wrapper .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.chart-wrapper .chart-header h5 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.chart-wrapper .chart-body {
+    position: relative;
+    height: 300px;
+}
+
+/* Activity Feed */
+.activity-feed {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.activity-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 15px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-item .activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.activity-item .activity-icon.task {
+    background: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+}
+
+.activity-item .activity-icon.incident {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+.activity-item .activity-icon.system {
+    background: rgba(25, 135, 84, 0.1);
+    color: #198754;
+}
+
+.activity-item .activity-icon.user {
+    background: rgba(111, 66, 193, 0.1);
+    color: #6f42c1;
+}
+
+.activity-item .activity-content {
+    flex: 1;
+}
+
+.activity-item .activity-content .activity-title {
+    font-weight: 500;
+    margin-bottom: 3px;
+}
+
+.activity-item .activity-content .activity-description {
+    color: #6c757d;
+    font-size: 14px;
+    margin-bottom: 3px;
+}
+
+.activity-item .activity-content .activity-time {
+    color: #adb5bd;
+    font-size: 12px;
+}
+
+/* Quick Stats */
+.quick-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.quick-stat-item {
+    text-align: center;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.quick-stat-item .number {
+    font-size: 24px;
+    font-weight: 700;
+    display: block;
+}
+
+.quick-stat-item .label {
+    font-size: 13px;
+    color: #6c757d;
+}
+
+/* System Status Grid */
+.system-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.status-card {
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.status-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.status-card .status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-bottom: 5px;
+}
+
+.status-card .status-dot.operational {
+    background: #28a745;
+}
+
+.status-card .status-dot.maintenance {
+    background: #ffc107;
+}
+
+.status-card .status-dot.degraded {
+    background: #fd7e14;
+}
+
+.status-card .status-dot.offline {
+    background: #dc3545;
+}
+
+.status-card .status-count {
+    font-size: 20px;
+    font-weight: 700;
+    display: block;
+}
+
+.status-card .status-label {
+    font-size: 13px;
+    color: #6c757d;
+}
+
+/* Task Priority Indicators */
+.priority-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.priority-indicator.critical {
+    background: #dc3545;
+}
+
+.priority-indicator.high {
+    background: #fd7e14;
+}
+
+.priority-indicator.medium {
+    background: #ffc107;
+}
+
+.priority-indicator.low {
+    background: #28a745;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .stat-card .stat-number {
+        font-size: 22px;
+    }
+    
+    .quick-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .system-status-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .chart-wrapper .chart-body {
+        height: 250px;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .stat-card {
+        background: #2d2d2d;
+        border-color: #3d3d3d;
+    }
+    
+    .stat-card .stat-label {
+        color: #adb5bd;
+    }
+    
+    .chart-wrapper {
+        background: #2d2d2d;
+    }
+    
+    .quick-stat-item {
+        background: #2d2d2d;
+    }
+    
+    .status-card {
+        background: #2d2d2d;
+        border-color: #3d3d3d;
+    }
+    
+    .activity-item {
+        border-color: #3d3d3d;
+    }
+}
