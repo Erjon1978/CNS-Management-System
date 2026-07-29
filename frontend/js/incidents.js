@@ -97,6 +97,16 @@ function applyIncidentFilters() {
 }
 
 // Get incident status color
+function getSeverityColor(severity) {
+    const colors = {
+        critical: 'danger',
+        high: 'warning',
+        medium: 'info',
+        low: 'success'
+    };
+    return colors[severity] || 'secondary';
+}
+
 function getIncidentStatusColor(status) {
     const colors = {
         reported: 'danger',
@@ -197,12 +207,189 @@ function showIncidentDetailsModal(incident) {
     modal.show();
 }
 
+// Build the shared create/edit incident form. `incident` is null for create.
+function buildIncidentFormFields(systems, users, incident) {
+    const inc = incident || {};
+    const systemId = inc.system ? (inc.system._id || inc.system) : '';
+    const assignedToId = inc.assignedTo ? (inc.assignedTo._id || inc.assignedTo) : '';
+
+    const incidentTypes = ['failure', 'degradation', 'alarm', 'performance_issue', 'safety_concern', 'operational_impact'];
+
+    return `
+        <div class="mb-3">
+            <label class="form-label">Title *</label>
+            <input type="text" class="form-control" name="title" value="${inc.title || ''}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" name="description" rows="3">${inc.description || ''}</textarea>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">System *</label>
+                    <select class="form-select" name="system" required>
+                        <option value="">Select a system</option>
+                        ${systems.map(sys => `
+                            <option value="${sys._id}" ${String(systemId) === String(sys._id) ? 'selected' : ''}>${sys.name}</option>
+                        `).join('')}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Incident Type *</label>
+                    <select class="form-select" name="incidentType" required>
+                        ${incidentTypes.map(it => `
+                            <option value="${it}" ${inc.incidentType === it ? 'selected' : ''}>${it.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>
+                        `).join('')}
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Severity</label>
+                    <select class="form-select" name="severity">
+                        ${['critical', 'high', 'medium', 'low'].map(s => `
+                            <option value="${s}" ${(inc.severity || 'medium') === s ? 'selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                        `).join('')}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Assigned To</label>
+                    <select class="form-select" name="assignedTo">
+                        <option value="">Unassigned</option>
+                        ${users.map(u => `
+                            <option value="${u._id}" ${String(assignedToId) === String(u._id) ? 'selected' : ''}>${u.firstName} ${u.lastName}</option>
+                        `).join('')}
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Service Impact</label>
+            <textarea class="form-control" name="serviceImpact" rows="2">${inc.serviceImpact || ''}</textarea>
+        </div>
+    `;
+}
+
+function readIncidentFormData(form) {
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    if (!data.assignedTo) delete data.assignedTo;
+    return data;
+}
+
+async function loadIncidentFormDependencies() {
+    const [systemsRes, usersRes] = await Promise.all([
+        API.get('/systems'),
+        API.get('/users')
+    ]);
+    return {
+        systems: systemsRes.systems || [],
+        users: usersRes.users || []
+    };
+}
+
 // Create incident modal
 function showCreateIncidentModal() {
-    showToast('Create incident functionality coming soon', 'info');
+    loadIncidentFormDependencies().then(({ systems, users }) => {
+        const modalHtml = `
+            <div class="modal fade" id="incidentFormModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Report Incident</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form id="incidentForm" onsubmit="handleCreateIncident(event)">
+                            <div class="modal-body">
+                                ${buildIncidentFormFields(systems, users, null)}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Report Incident</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+        const existingModal = document.getElementById('incidentFormModal');
+        if (existingModal) existingModal.remove();
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('incidentFormModal'));
+        modal.show();
+    }).catch(error => {
+        showToast('Error loading form data: ' + error.message, 'danger');
+    });
+}
+
+async function handleCreateIncident(event) {
+    event.preventDefault();
+    const data = readIncidentFormData(event.target);
+    try {
+        await API.post('/incidents', data);
+        showToast('Incident reported successfully', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('incidentFormModal')).hide();
+        loadIncidents(document.getElementById('page-content'));
+    } catch (error) {
+        showToast('Error reporting incident: ' + error.message, 'danger');
+    }
 }
 
 // Edit incident
-function editIncident(id) {
-    showToast('Edit incident functionality coming soon', 'info');
+async function editIncident(id) {
+    try {
+        const [incident, deps] = await Promise.all([
+            API.get(`/incidents/${id}`),
+            loadIncidentFormDependencies()
+        ]);
+
+        const modalHtml = `
+            <div class="modal fade" id="incidentFormModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Edit Incident</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form id="incidentForm" onsubmit="handleEditIncident(event, '${id}')">
+                            <div class="modal-body">
+                                ${buildIncidentFormFields(deps.systems, deps.users, incident)}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+        const existingModal = document.getElementById('incidentFormModal');
+        if (existingModal) existingModal.remove();
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('incidentFormModal'));
+        modal.show();
+    } catch (error) {
+        showToast('Error loading incident: ' + error.message, 'danger');
+    }
+}
+
+async function handleEditIncident(event, id) {
+    event.preventDefault();
+    const data = readIncidentFormData(event.target);
+    try {
+        await API.put(`/incidents/${id}`, data);
+        showToast('Incident updated successfully', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('incidentFormModal')).hide();
+        loadIncidents(document.getElementById('page-content'));
+    } catch (error) {
+        showToast('Error updating incident: ' + error.message, 'danger');
+    }
 }

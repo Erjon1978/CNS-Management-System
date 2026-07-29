@@ -108,6 +108,17 @@ function applyTaskFilters() {
     loadTasks(document.getElementById('page-content'));
 }
 
+// Get priority color
+function getPriorityColor(priority) {
+    const colors = {
+        critical: 'danger',
+        high: 'warning',
+        medium: 'info',
+        low: 'success'
+    };
+    return colors[priority] || 'secondary';
+}
+
 // Get status color
 function getStatusColor(status) {
     const colors = {
@@ -217,12 +228,226 @@ async function updateTaskStatus(id, status) {
     }
 }
 
+// Build the shared create/edit task form. `task` is null for create.
+function buildTaskFormFields(systems, users, groups, task) {
+    const t = task || {};
+    const systemId = t.system ? (t.system._id || t.system) : '';
+    const assignedToId = t.assignedTo ? (t.assignedTo._id || t.assignedTo) : '';
+    const assignedGroupId = t.assignedGroup ? (t.assignedGroup._id || t.assignedGroup) : '';
+    const toDateInput = (d) => d ? new Date(d).toISOString().split('T')[0] : '';
+
+    const taskTypes = ['preventive_maintenance', 'corrective_maintenance', 'predictive_maintenance',
+        'emergency_repair', 'calibration', 'software_update', 'firmware_update',
+        'configuration_change', 'testing', 'inspection', 'certification'];
+
+    return `
+        <div class="mb-3">
+            <label class="form-label">Title *</label>
+            <input type="text" class="form-control" name="title" value="${t.title || ''}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" name="description" rows="2">${t.description || ''}</textarea>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Task Type *</label>
+                    <select class="form-select" name="taskType" required>
+                        ${taskTypes.map(tt => `
+                            <option value="${tt}" ${t.taskType === tt ? 'selected' : ''}>${tt.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>
+                        `).join('')}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">System *</label>
+                    <select class="form-select" name="system" required>
+                        <option value="">Select a system</option>
+                        ${systems.map(sys => `
+                            <option value="${sys._id}" ${String(systemId) === String(sys._id) ? 'selected' : ''}>${sys.name}</option>
+                        `).join('')}
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label class="form-label">Priority</label>
+                    <select class="form-select" name="priority">
+                        ${['critical', 'high', 'medium', 'low'].map(p => `
+                            <option value="${p}" ${(t.priority || 'medium') === p ? 'selected' : ''}>${p.charAt(0).toUpperCase() + p.slice(1)}</option>
+                        `).join('')}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label class="form-label">Assigned To</label>
+                    <select class="form-select" name="assignedTo">
+                        <option value="">Unassigned</option>
+                        ${users.map(u => `
+                            <option value="${u._id}" ${String(assignedToId) === String(u._id) ? 'selected' : ''}>${u.firstName} ${u.lastName}</option>
+                        `).join('')}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label class="form-label">Assigned Group</label>
+                    <select class="form-select" name="assignedGroup">
+                        <option value="">None</option>
+                        ${groups.map(g => `
+                            <option value="${g._id}" ${String(assignedGroupId) === String(g._id) ? 'selected' : ''}>${g.name}</option>
+                        `).join('')}
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" class="form-control" name="startDate" value="${toDateInput(t.startDate)}">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label class="form-label">Due Date *</label>
+                    <input type="date" class="form-control" name="dueDate" value="${toDateInput(t.dueDate)}" required>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label class="form-label">Estimated Duration (hours)</label>
+                    <input type="number" step="0.5" min="0" class="form-control" name="estimatedDuration" value="${t.estimatedDuration || ''}">
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function readTaskFormData(form) {
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    if (!data.assignedTo) delete data.assignedTo;
+    if (!data.assignedGroup) delete data.assignedGroup;
+    if (!data.startDate) delete data.startDate;
+    if (data.estimatedDuration) data.estimatedDuration = Number(data.estimatedDuration);
+    else delete data.estimatedDuration;
+    return data;
+}
+
+async function loadTaskFormDependencies() {
+    const [systemsRes, usersRes, groupsRes] = await Promise.all([
+        API.get('/systems'),
+        API.get('/users'),
+        API.get('/groups')
+    ]);
+    return {
+        systems: systemsRes.systems || [],
+        users: usersRes.users || [],
+        groups: groupsRes.groups || []
+    };
+}
+
 // Create task modal
 function showCreateTaskModal() {
-    showToast('Create task functionality coming soon', 'info');
+    loadTaskFormDependencies().then(({ systems, users, groups }) => {
+        const modalHtml = `
+            <div class="modal fade" id="taskFormModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Create Task</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form id="taskForm" onsubmit="handleCreateTask(event)">
+                            <div class="modal-body">
+                                ${buildTaskFormFields(systems, users, groups, null)}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Create Task</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+        const existingModal = document.getElementById('taskFormModal');
+        if (existingModal) existingModal.remove();
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('taskFormModal'));
+        modal.show();
+    }).catch(error => {
+        showToast('Error loading form data: ' + error.message, 'danger');
+    });
+}
+
+async function handleCreateTask(event) {
+    event.preventDefault();
+    const data = readTaskFormData(event.target);
+    try {
+        await API.post('/tasks', data);
+        showToast('Task created successfully', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('taskFormModal')).hide();
+        loadTasks(document.getElementById('page-content'));
+    } catch (error) {
+        showToast('Error creating task: ' + error.message, 'danger');
+    }
 }
 
 // Edit task
-function editTask(id) {
-    showToast('Edit task functionality coming soon', 'info');
+async function editTask(id) {
+    try {
+        const [task, deps] = await Promise.all([
+            API.get(`/tasks/${id}`),
+            loadTaskFormDependencies()
+        ]);
+
+        const modalHtml = `
+            <div class="modal fade" id="taskFormModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Edit Task</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form id="taskForm" onsubmit="handleEditTask(event, '${id}')">
+                            <div class="modal-body">
+                                ${buildTaskFormFields(deps.systems, deps.users, deps.groups, task)}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+        const existingModal = document.getElementById('taskFormModal');
+        if (existingModal) existingModal.remove();
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('taskFormModal'));
+        modal.show();
+    } catch (error) {
+        showToast('Error loading task: ' + error.message, 'danger');
+    }
+}
+
+async function handleEditTask(event, id) {
+    event.preventDefault();
+    const data = readTaskFormData(event.target);
+    try {
+        await API.put(`/tasks/${id}`, data);
+        showToast('Task updated successfully', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('taskFormModal')).hide();
+        loadTasks(document.getElementById('page-content'));
+    } catch (error) {
+        showToast('Error updating task: ' + error.message, 'danger');
+    }
 }

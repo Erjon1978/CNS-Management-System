@@ -527,8 +527,142 @@ async function handleUpdateStock(event, id) {
 }
 
 // Edit spare part
-function editSparePart(id) {
-    showToast('Edit functionality coming soon', 'info');
+// Edit spare part
+async function editSparePart(id) {
+    try {
+        const part = await API.get(`/spare-parts/${id}`);
+
+        const modalHtml = `
+            <div class="modal fade" id="editSparePartModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Edit Spare Part</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form id="editSparePartForm" onsubmit="handleEditSparePart(event, '${id}')">
+                            <div class="modal-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Part Name *</label>
+                                            <input type="text" class="form-control" name="name" value="${part.name || ''}" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Part Number *</label>
+                                            <input type="text" class="form-control" name="partNumber" value="${part.partNumber || ''}" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Manufacturer</label>
+                                            <input type="text" class="form-control" name="manufacturer" value="${part.manufacturer || ''}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Supplier</label>
+                                            <input type="text" class="form-control" name="supplier" value="${part.supplier || ''}">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">Quantity *</label>
+                                            <input type="number" class="form-control" name="quantity" min="0" value="${part.quantity ?? 0}" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">Minimum Stock *</label>
+                                            <input type="number" class="form-control" name="minimumQuantity" min="0" value="${part.minimumQuantity ?? 5}" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">Price</label>
+                                            <input type="number" class="form-control" name="price" step="0.01" min="0" value="${part.price ?? ''}">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Location</label>
+                                            <input type="text" class="form-control" name="location" value="${part.location || ''}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Lead Time (days)</label>
+                                            <input type="number" class="form-control" name="leadTime" min="0" value="${part.leadTime ?? ''}">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Description</label>
+                                    <textarea class="form-control" name="description" rows="3">${part.description || ''}</textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Datasheet URL</label>
+                                    <input type="url" class="form-control" name="datasheet" value="${part.datasheet || ''}">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const existingModal = document.getElementById('editSparePartModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        const modal = new bootstrap.Modal(document.getElementById('editSparePartModal'));
+        modal.show();
+    } catch (error) {
+        showToast('Error loading spare part: ' + error.message, 'danger');
+    }
+}
+
+// Handle edit spare part
+async function handleEditSparePart(event, id) {
+    event.preventDefault();
+
+    const form = event.target;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    data.quantity = parseInt(data.quantity);
+    data.minimumQuantity = parseInt(data.minimumQuantity);
+    if (data.price) data.price = parseFloat(data.price);
+    else delete data.price;
+    if (data.leadTime) data.leadTime = parseInt(data.leadTime);
+    else delete data.leadTime;
+
+    try {
+        await API.put(`/spare-parts/${id}`, data);
+        showToast('Spare part updated successfully', 'success');
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editSparePartModal'));
+        modal.hide();
+
+        loadSpareParts(document.getElementById('page-content'));
+    } catch (error) {
+        showToast('Error updating spare part: ' + error.message, 'danger');
+    }
 }
 
 // Delete spare part

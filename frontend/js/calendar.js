@@ -522,9 +522,88 @@ async function showEventDetails(eventId) {
 }
 
 // Edit event from modal
-function editEventFromModal() {
+async function editEventFromModal() {
     const eventId = document.getElementById('eventModal').dataset.eventId;
-    showToast('Edit functionality coming soon', 'info');
+
+    try {
+        const task = await API.get(`/tasks/${eventId}`);
+
+        // Close the details modal
+        const detailsModal = bootstrap.Modal.getInstance(document.getElementById('eventModal'));
+        if (detailsModal) detailsModal.hide();
+
+        const form = document.getElementById('createEventForm');
+        const modalEl = document.getElementById('createEventModal');
+
+        // Pre-fill the shared form with the task's current data
+        form.querySelector('[name="title"]').value = task.title || '';
+        form.querySelector('[name="taskType"]').value = task.taskType || 'preventive_maintenance';
+        form.querySelector('[name="description"]').value = task.description || '';
+        form.querySelector('[name="startDate"]').value = task.startDate ? new Date(task.startDate).toISOString().slice(0, 16) : '';
+        form.querySelector('[name="dueDate"]').value = task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 16) : '';
+        form.querySelector('[name="priority"]').value = task.priority || 'medium';
+        form.querySelector('[name="estimatedDuration"]').value = task.estimatedDuration || '';
+
+        const certSelect = form.querySelector('[name="requiredCertifications"]');
+        const certSet = new Set(task.requiredCertifications || []);
+        Array.from(certSelect.options).forEach(opt => { opt.selected = certSet.has(opt.value); });
+
+        // Recursive tasks aren't re-scheduled from the edit form — keep it simple, one-time only
+        form.querySelector('[name="scheduleType"]').value = 'one_time';
+        document.getElementById('recursiveOptions').style.display = 'none';
+
+        await loadSystemsForEvent(task.system ? (task.system._id || task.system) : null);
+        await loadUsersForEvent(task.assignedTo ? (task.assignedTo._id || task.assignedTo) : null);
+
+        // Switch the modal into edit mode
+        modalEl.querySelector('.modal-title').textContent = 'Edit Task';
+        modalEl.querySelector('button[type="submit"]').textContent = 'Save Changes';
+        form.onsubmit = (e) => handleEditEvent(e, eventId);
+
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    } catch (error) {
+        showToast('Error loading task: ' + error.message, 'danger');
+    }
+}
+
+// Handle edit event submit
+async function handleEditEvent(event, id) {
+    event.preventDefault();
+
+    const form = event.target;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    if (data.requiredCertifications) {
+        data.requiredCertifications = Array.from(formData.getAll('requiredCertifications'));
+    } else {
+        data.requiredCertifications = [];
+    }
+
+    delete data.scheduleType;
+    delete data.recursiveFrequency;
+    delete data.recursiveInterval;
+    delete data.recursiveEndDate;
+
+    if (data.estimatedDuration) {
+        data.estimatedDuration = parseFloat(data.estimatedDuration);
+    } else {
+        delete data.estimatedDuration;
+    }
+    if (!data.assignedTo) delete data.assignedTo;
+
+    try {
+        await API.put(`/tasks/${id}`, data);
+        showToast('Task updated successfully', 'success');
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('createEventModal'));
+        modal.hide();
+
+        loadCalendar(document.getElementById('page-content'));
+    } catch (error) {
+        showToast('Error updating task: ' + error.message, 'danger');
+    }
 }
 
 // Delete event from modal
@@ -553,8 +632,17 @@ function showCreateEventModal(selectedDate) {
         showToast('Only managers can create tasks', 'warning');
         return;
     }
-    
-    const modal = new bootstrap.Modal(document.getElementById('createEventModal'));
+
+    const form = document.getElementById('createEventForm');
+    const modalEl = document.getElementById('createEventModal');
+
+    // Reset to create-mode defaults in case this modal was last used for editing
+    form.reset();
+    modalEl.querySelector('.modal-title').textContent = 'Create Task';
+    modalEl.querySelector('button[type="submit"]').textContent = 'Create Task';
+    form.onsubmit = (e) => handleCreateEvent(e);
+
+    const modal = new bootstrap.Modal(modalEl);
     
     // Set default dates
     if (selectedDate) {
@@ -565,19 +653,22 @@ function showCreateEventModal(selectedDate) {
         document.querySelector('[name="startDate"]').value = startDate.toISOString().slice(0, 16);
         document.querySelector('[name="dueDate"]').value = dueDate.toISOString().slice(0, 16);
     }
+
+    loadSystemsForEvent();
+    loadUsersForEvent();
     
     modal.show();
 }
 
 // Load systems for event form
-async function loadSystemsForEvent() {
+async function loadSystemsForEvent(selectedId) {
     try {
         const response = await API.get('/systems');
         const select = document.getElementById('eventSystemSelect');
         select.innerHTML = `
             <option value="">Select System</option>
             ${response.systems.map(system => `
-                <option value="${system._id}">${system.name} (${system.systemType})</option>
+                <option value="${system._id}" ${selectedId && String(selectedId) === String(system._id) ? 'selected' : ''}>${system.name} (${system.systemType})</option>
             `).join('')}
         `;
     } catch (error) {
@@ -586,14 +677,14 @@ async function loadSystemsForEvent() {
 }
 
 // Load users for event form
-async function loadUsersForEvent() {
+async function loadUsersForEvent(selectedId) {
     try {
         const response = await API.get('/users');
         const select = document.getElementById('eventUserSelect');
         select.innerHTML = `
             <option value="">Unassigned</option>
             ${response.users.map(user => `
-                <option value="${user._id}">${user.firstName} ${user.lastName} (${user.role})</option>
+                <option value="${user._id}" ${selectedId && String(selectedId) === String(user._id) ? 'selected' : ''}>${user.firstName} ${user.lastName} (${user.role})</option>
             `).join('')}
         `;
     } catch (error) {
