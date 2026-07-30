@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const { CERTIFICATIONS } = require('../config/constants');
 
 const userSchema = new mongoose.Schema({
   username: {
@@ -48,8 +47,7 @@ const userSchema = new mongoose.Schema({
     ref: 'Group'
   },
   certifications: [{
-    type: String,
-    enum: CERTIFICATIONS
+    type: String
   }],
   certificationsExpiry: [{
     certification: String,

@@ -207,22 +207,14 @@ function showSystemDetailsModal(system) {
     modal.show();
 }
 
-// System type -> valid subsystem options (mirrors backend/src/config/constants.js)
-const SYSTEM_TYPE_OPTIONS = [
-    { value: 'communication', label: 'Communication' },
-    { value: 'navigation', label: 'Navigation' },
-    { value: 'surveillance', label: 'Surveillance' },
-    { value: 'data_processing', label: 'Data Processing' },
-    { value: 'meteorological', label: 'Meteorological' }
-];
+// System types (with embedded subsystems) fetched from the admin-managed
+// config API. Populated whenever a create/edit modal opens.
+let cachedSystemTypes = [];
 
-const SYSTEM_SUBSYSTEM_OPTIONS = {
-    communication: ['vhf_radio', 'hf_radio', 'satcom', 'voip', 'intercom', 'telephone', 'gateway'],
-    navigation: ['vor', 'dme', 'ils', 'ndb', 'gps', 'gbas', 'tacan'],
-    surveillance: ['primary_radar', 'secondary_radar', 'ads_b', 'mlat', 'ssr', 'psr', 'mode_s'],
-    data_processing: ['flight_data', 'fdp', 'aftn', 'amhs', 'atc_console', 'fdps', 'cns_monitoring'],
-    meteorological: ['aws', 'awos', 'metar', 'wind_shear', 'ceilometer', 'weather_radar']
-};
+async function loadSystemTypes() {
+    cachedSystemTypes = await API.get('/config/system-types');
+    return cachedSystemTypes;
+}
 
 function formatOptionLabel(value) {
     return value.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -234,9 +226,10 @@ function updateSubsystemOptions(selectedSubsystem) {
     const subsystemSelect = document.querySelector('#systemForm [name="subsystem"]');
     if (!typeSelect || !subsystemSelect) return;
 
-    const options = SYSTEM_SUBSYSTEM_OPTIONS[typeSelect.value] || [];
+    const matchedType = cachedSystemTypes.find(t => t.value === typeSelect.value);
+    const options = matchedType ? matchedType.subsystems : [];
     subsystemSelect.innerHTML = options.map(opt => `
-        <option value="${opt}" ${opt === selectedSubsystem ? 'selected' : ''}>${formatOptionLabel(opt)}</option>
+        <option value="${opt.value}" ${opt.value === selectedSubsystem ? 'selected' : ''}>${opt.label}</option>
     `).join('');
 }
 
@@ -245,7 +238,8 @@ function buildSystemFormFields(groups, system) {
     const s = system || {};
     const loc = s.location || {};
     const assignedGroupId = s.assignedGroup ? (s.assignedGroup._id || s.assignedGroup) : '';
-    const subsystemOptions = SYSTEM_SUBSYSTEM_OPTIONS[s.systemType] || SYSTEM_SUBSYSTEM_OPTIONS.communication;
+    const matchedType = cachedSystemTypes.find(t => t.value === s.systemType) || cachedSystemTypes[0];
+    const subsystemOptions = matchedType ? matchedType.subsystems : [];
 
     const toDateInput = (d) => d ? new Date(d).toISOString().split('T')[0] : '';
 
@@ -269,7 +263,7 @@ function buildSystemFormFields(groups, system) {
                 <div class="mb-3">
                     <label class="form-label">System Type *</label>
                     <select class="form-select" name="systemType" required onchange="updateSubsystemOptions()">
-                        ${SYSTEM_TYPE_OPTIONS.map(opt => `
+                        ${cachedSystemTypes.map(opt => `
                             <option value="${opt.value}" ${s.systemType === opt.value ? 'selected' : ''}>${opt.label}</option>
                         `).join('')}
                     </select>
@@ -280,7 +274,7 @@ function buildSystemFormFields(groups, system) {
                     <label class="form-label">Subsystem *</label>
                     <select class="form-select" name="subsystem" required>
                         ${subsystemOptions.map(opt => `
-                            <option value="${opt}" ${s.subsystem === opt ? 'selected' : ''}>${formatOptionLabel(opt)}</option>
+                            <option value="${opt.value}" ${s.subsystem === opt.value ? 'selected' : ''}>${opt.label}</option>
                         `).join('')}
                     </select>
                 </div>
@@ -434,7 +428,7 @@ function readSystemFormData(form) {
 
 // Create system modal
 function showCreateSystemModal() {
-    API.get('/groups').then(response => {
+    Promise.all([API.get('/groups'), loadSystemTypes()]).then(([response]) => {
         const groups = response.groups || [];
         const modalHtml = `
             <div class="modal fade" id="createSystemModal" tabindex="-1">
@@ -485,7 +479,8 @@ async function editSystem(id) {
     try {
         const [system, groupsResponse] = await Promise.all([
             API.get(`/systems/${id}`),
-            API.get('/groups')
+            API.get('/groups'),
+            loadSystemTypes()
         ]);
         const groups = groupsResponse.groups || [];
 

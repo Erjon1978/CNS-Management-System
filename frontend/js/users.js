@@ -348,9 +348,17 @@ function showUserDetailsModal(user) {
 }
 
 // Show create user modal
+// Certifications fetched from the admin-managed config API (Settings > System Configuration)
+let cachedCertifications = [];
+
+async function loadUserCertOptions() {
+    cachedCertifications = await API.get('/config/certifications');
+    return cachedCertifications;
+}
+
 function showCreateUserModal() {
-    // First, load groups for the dropdown
-    API.get('/groups').then(response => {
+    // Load groups for the dropdown and refresh certification options
+    Promise.all([API.get('/groups'), loadUserCertOptions()]).then(([response]) => {
         const groups = response.groups || [];
         
         const modalHtml = `
@@ -426,15 +434,9 @@ function showCreateUserModal() {
                                 <div class="mb-3">
                                     <label class="form-label">Certifications</label>
                                     <select class="form-select" name="certifications" multiple>
-                                        <option value="electrical">Electrical</option>
-                                        <option value="mechanical">Mechanical</option>
-                                        <option value="electronics">Electronics</option>
-                                        <option value="rf">RF</option>
-                                        <option value="software">Software</option>
-                                        <option value="safety">Safety</option>
-                                        <option value="radar">Radar</option>
-                                        <option value="navigation">Navigation</option>
-                                        <option value="communication">Communication</option>
+                                        ${cachedCertifications.map(cert => `
+                                            <option value="${cert.value}">${cert.label}</option>
+                                        `).join('')}
                                     </select>
                                     <small class="form-text">Hold Ctrl/Cmd to select multiple</small>
                                 </div>
@@ -510,7 +512,8 @@ async function editUser(id) {
     try {
         const [user, groupsResponse] = await Promise.all([
             API.get(`/users/${id}`),
-            API.get('/groups')
+            API.get('/groups'),
+            loadUserCertOptions()
         ]);
         const groups = groupsResponse.groups || [];
         const userGroupId = user.group ? (user.group._id || user.group) : '';
@@ -588,8 +591,8 @@ async function editUser(id) {
                                 <div class="mb-3">
                                     <label class="form-label">Certifications</label>
                                     <select class="form-select" name="certifications" multiple>
-                                        ${['electrical', 'mechanical', 'electronics', 'rf', 'software', 'safety', 'radar', 'navigation', 'communication'].map(cert => `
-                                            <option value="${cert}" ${certSet.has(cert) ? 'selected' : ''}>${cert.charAt(0).toUpperCase() + cert.slice(1)}</option>
+                                        ${cachedCertifications.map(cert => `
+                                            <option value="${cert.value}" ${certSet.has(cert.value) ? 'selected' : ''}>${cert.label}</option>
                                         `).join('')}
                                     </select>
                                     <small class="form-text">Hold Ctrl/Cmd to select multiple</small>

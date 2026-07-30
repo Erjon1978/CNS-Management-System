@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const { SYSTEM_TYPES } = require('../config/constants');
 
 const groupSchema = new mongoose.Schema({
   name: {
@@ -10,8 +9,7 @@ const groupSchema = new mongoose.Schema({
   },
   description: String,
   responsibleSystemTypes: [{
-    type: String,
-    enum: Object.values(SYSTEM_TYPES)
+    type: String
   }],
   teamLead: {
     type: mongoose.Schema.Types.ObjectId,
@@ -22,8 +20,7 @@ const groupSchema = new mongoose.Schema({
     ref: 'User'
   }],
   certifications: [{
-    type: String,
-    enum: ['electrical', 'mechanical', 'electronics', 'rf', 'software', 'safety', 'radar', 'navigation', 'communication']
+    type: String
   }],
   shiftSchedule: {
     startTime: String,

@@ -21,6 +21,7 @@ const userRoutes = require('./src/routes/userRoutes');
 const groupRoutes = require('./src/routes/groupRoutes');
 const dashboardRoutes = require('./src/routes/dashboardRoutes');
 const trainingRoutes = require('./src/routes/trainingRoutes');
+const configRoutes = require('./src/routes/configRoutes');
 
 // Import middleware
 const { errorHandler } = require('./src/middleware/errorHandler');
@@ -83,6 +84,7 @@ app.use('/api/users', protect, userRoutes);
 app.use('/api/groups', protect, groupRoutes);
 app.use('/api/dashboard', protect, dashboardRoutes);
 app.use('/api/trainings', protect, trainingRoutes);
+app.use('/api/config', protect, configRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

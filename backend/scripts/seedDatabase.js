@@ -6,6 +6,8 @@ const Task = require('../src/models/Task');
 const Incident = require('../src/models/Incident');
 const SparePart = require('../src/models/SparePart');
 const Training = require('../src/models/Training');
+const SystemType = require('../src/models/SystemType');
+const Certification = require('../src/models/Certification');
 require('dotenv').config();
 
 const seedDatabase = async () => {
@@ -22,7 +24,92 @@ const seedDatabase = async () => {
         await Incident.deleteMany({});
         await SparePart.deleteMany({});
         await Training.deleteMany({});
+        await SystemType.deleteMany({});
+        await Certification.deleteMany({});
         console.log('Cleared existing data');
+
+        // Create system types (with their subsystems) — admin-editable from here on
+        await SystemType.create([
+            {
+                value: 'communication',
+                label: 'Communication',
+                subsystems: [
+                    { value: 'vhf_radio', label: 'VHF Radio' },
+                    { value: 'hf_radio', label: 'HF Radio' },
+                    { value: 'satcom', label: 'SATCOM' },
+                    { value: 'voip', label: 'VoIP' },
+                    { value: 'intercom', label: 'Intercom' },
+                    { value: 'telephone', label: 'Telephone' },
+                    { value: 'gateway', label: 'Gateway' }
+                ]
+            },
+            {
+                value: 'navigation',
+                label: 'Navigation',
+                subsystems: [
+                    { value: 'vor', label: 'VOR' },
+                    { value: 'dme', label: 'DME' },
+                    { value: 'ils', label: 'ILS' },
+                    { value: 'ndb', label: 'NDB' },
+                    { value: 'gps', label: 'GPS' },
+                    { value: 'gbas', label: 'GBAS' },
+                    { value: 'tacan', label: 'TACAN' }
+                ]
+            },
+            {
+                value: 'surveillance',
+                label: 'Surveillance',
+                subsystems: [
+                    { value: 'primary_radar', label: 'Primary Radar' },
+                    { value: 'secondary_radar', label: 'Secondary Radar' },
+                    { value: 'ads_b', label: 'ADS-B' },
+                    { value: 'mlat', label: 'MLAT' },
+                    { value: 'ssr', label: 'SSR' },
+                    { value: 'psr', label: 'PSR' },
+                    { value: 'mode_s', label: 'Mode S' }
+                ]
+            },
+            {
+                value: 'data_processing',
+                label: 'Data Processing',
+                subsystems: [
+                    { value: 'flight_data', label: 'Flight Data' },
+                    { value: 'fdp', label: 'FDP' },
+                    { value: 'aftn', label: 'AFTN' },
+                    { value: 'amhs', label: 'AMHS' },
+                    { value: 'atc_console', label: 'ATC Console' },
+                    { value: 'fdps', label: 'FDPS' },
+                    { value: 'cns_monitoring', label: 'CNS Monitoring' }
+                ]
+            },
+            {
+                value: 'meteorological',
+                label: 'Meteorological',
+                subsystems: [
+                    { value: 'aws', label: 'AWS' },
+                    { value: 'awos', label: 'AWOS' },
+                    { value: 'metar', label: 'METAR' },
+                    { value: 'wind_shear', label: 'Wind Shear' },
+                    { value: 'ceilometer', label: 'Ceilometer' },
+                    { value: 'weather_radar', label: 'Weather Radar' }
+                ]
+            }
+        ]);
+        console.log('Created system types');
+
+        // Create certifications — admin-editable from here on
+        await Certification.create([
+            { value: 'electrical', label: 'Electrical' },
+            { value: 'mechanical', label: 'Mechanical' },
+            { value: 'electronics', label: 'Electronics' },
+            { value: 'rf', label: 'RF' },
+            { value: 'software', label: 'Software' },
+            { value: 'safety', label: 'Safety' },
+            { value: 'radar', label: 'Radar' },
+            { value: 'navigation', label: 'Navigation' },
+            { value: 'communication', label: 'Communication' }
+        ]);
+        console.log('Created certifications');
 
         // Create groups
         const groups = await Group.create([

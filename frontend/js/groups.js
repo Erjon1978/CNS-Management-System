@@ -3,15 +3,19 @@
 let currentGroupPage = 1;
 let groupFilters = {};
 
-// The system types a group can be responsible for. Kept in sync with the
-// backend's SYSTEM_TYPES constant (src/config/constants.js).
-const SYSTEM_TYPE_OPTIONS = [
-    { value: 'communication', label: 'Communication' },
-    { value: 'navigation', label: 'Navigation' },
-    { value: 'surveillance', label: 'Surveillance' },
-    { value: 'data_processing', label: 'Data Processing' },
-    { value: 'meteorological', label: 'Meteorological' }
-];
+// System types and certifications, fetched from the admin-managed config API
+// (Settings > System Configuration). Refreshed each time the page loads.
+let cachedSystemTypes = [];
+let cachedCertifications = [];
+
+async function loadGroupConfigOptions() {
+    const [systemTypes, certifications] = await Promise.all([
+        API.get('/config/system-types'),
+        API.get('/config/certifications')
+    ]);
+    cachedSystemTypes = systemTypes;
+    cachedCertifications = certifications;
+}
 
 // Load groups page
 async function loadGroups(container) {
@@ -26,6 +30,8 @@ async function loadGroups(container) {
             `;
             return;
         }
+
+        await loadGroupConfigOptions();
 
         const params = new URLSearchParams({
             page: currentGroupPage,
@@ -48,7 +54,7 @@ async function loadGroups(container) {
                     </button>
                     <select class="form-select" id="groupTypeFilter" style="width: 200px;">
                         <option value="">All System Types</option>
-                        ${SYSTEM_TYPE_OPTIONS.map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('')}
+                        ${cachedSystemTypes.map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('')}
                     </select>
                 </div>
                 <button class="btn btn-primary" onclick="showCreateGroupModal()">
@@ -234,7 +240,7 @@ function getGroupBadgeColor(type) {
 }
 
 function formatGroupType(type) {
-    const found = SYSTEM_TYPE_OPTIONS.find(opt => opt.value === type);
+    const found = cachedSystemTypes.find(opt => opt.value === type);
     return found ? found.label : type;
 }
 
@@ -432,7 +438,7 @@ function buildGroupFormFields(users, group) {
                 <div class="mb-3">
                     <label class="form-label">System Responsibility</label>
                     <select class="form-select" name="responsibleSystemTypes" multiple>
-                        ${SYSTEM_TYPE_OPTIONS.map(opt => `
+                        ${cachedSystemTypes.map(opt => `
                             <option value="${opt.value}" ${responsibleSet.has(opt.value) ? 'selected' : ''}>${opt.label}</option>
                         `).join('')}
                     </select>
@@ -460,8 +466,8 @@ function buildGroupFormFields(users, group) {
                 <div class="mb-3">
                     <label class="form-label">Certifications</label>
                     <select class="form-select" name="certifications" multiple>
-                        ${['electrical', 'mechanical', 'electronics', 'rf', 'software', 'safety', 'radar', 'navigation', 'communication'].map(cert => `
-                            <option value="${cert}" ${certSet.has(cert) ? 'selected' : ''}>${cert.charAt(0).toUpperCase() + cert.slice(1)}</option>
+                        ${cachedCertifications.map(cert => `
+                            <option value="${cert.value}" ${certSet.has(cert.value) ? 'selected' : ''}>${cert.label}</option>
                         `).join('')}
                     </select>
                     <small class="form-text">Hold Ctrl/Cmd to select multiple</small>
@@ -511,8 +517,8 @@ function readGroupFormData(form) {
 
 // Show create group modal
 function showCreateGroupModal() {
-    // First, load users for team lead dropdown
-    API.get('/users').then(response => {
+    // Refresh config options (system types/certifications) and load users for team lead dropdown
+    Promise.all([API.get('/users'), loadGroupConfigOptions()]).then(([response]) => {
         const users = response.users || [];
         
         const modalHtml = `
@@ -581,7 +587,8 @@ async function editGroup(id) {
     try {
         const [group, usersResponse] = await Promise.all([
             API.get(`/groups/${id}`),
-            API.get('/users')
+            API.get('/users'),
+            loadGroupConfigOptions()
         ]);
         const users = usersResponse.users || [];
 

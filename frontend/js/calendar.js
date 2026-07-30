@@ -201,13 +201,7 @@ async function loadCalendar(container) {
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Required Certifications</label>
-                                            <select class="form-select" name="requiredCertifications" multiple>
-                                                <option value="electrical">Electrical</option>
-                                                <option value="mechanical">Mechanical</option>
-                                                <option value="electronics">Electronics</option>
-                                                <option value="rf">RF</option>
-                                                <option value="software">Software</option>
-                                                <option value="safety">Safety</option>
+                                            <select class="form-select" name="requiredCertifications" id="eventCertificationsSelect" multiple>
                                             </select>
                                             <small class="form-text">Hold Ctrl/Cmd to select multiple</small>
                                         </div>
@@ -230,6 +224,7 @@ async function loadCalendar(container) {
         if (isManager()) {
             loadSystemsForEvent();
             loadUsersForEvent();
+            loadCertificationsForEvent();
         }
 
         // Add schedule type change listener
@@ -544,16 +539,13 @@ async function editEventFromModal() {
         form.querySelector('[name="priority"]').value = task.priority || 'medium';
         form.querySelector('[name="estimatedDuration"]').value = task.estimatedDuration || '';
 
-        const certSelect = form.querySelector('[name="requiredCertifications"]');
-        const certSet = new Set(task.requiredCertifications || []);
-        Array.from(certSelect.options).forEach(opt => { opt.selected = certSet.has(opt.value); });
-
         // Recursive tasks aren't re-scheduled from the edit form — keep it simple, one-time only
         form.querySelector('[name="scheduleType"]').value = 'one_time';
         document.getElementById('recursiveOptions').style.display = 'none';
 
         await loadSystemsForEvent(task.system ? (task.system._id || task.system) : null);
         await loadUsersForEvent(task.assignedTo ? (task.assignedTo._id || task.assignedTo) : null);
+        await loadCertificationsForEvent(task.requiredCertifications || []);
 
         // Switch the modal into edit mode
         modalEl.querySelector('.modal-title').textContent = 'Edit Task';
@@ -656,6 +648,7 @@ function showCreateEventModal(selectedDate) {
 
     loadSystemsForEvent();
     loadUsersForEvent();
+    loadCertificationsForEvent();
     
     modal.show();
 }
@@ -689,6 +682,20 @@ async function loadUsersForEvent(selectedId) {
         `;
     } catch (error) {
         console.error('Error loading users:', error);
+    }
+}
+
+// Load certification options for event form
+async function loadCertificationsForEvent(selectedValues) {
+    try {
+        const certifications = await API.get('/config/certifications');
+        const select = document.getElementById('eventCertificationsSelect');
+        const selectedSet = new Set(selectedValues || []);
+        select.innerHTML = certifications.map(cert => `
+            <option value="${cert.value}" ${selectedSet.has(cert.value) ? 'selected' : ''}>${cert.label}</option>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading certifications:', error);
     }
 }
 

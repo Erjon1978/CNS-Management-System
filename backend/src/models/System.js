@@ -1,8 +1,6 @@
 const mongoose = require('mongoose');
 const { SYSTEM_TYPES, SYSTEM_STATUS, SERVICE_LEVELS } = require('../config/constants');
 
-// Get all system type values
-const systemTypeValues = Object.values(SYSTEM_TYPES);
 const systemStatusValues = Object.values(SYSTEM_STATUS);
 const serviceLevelValues = Object.values(SERVICE_LEVELS);
 
@@ -14,7 +12,6 @@ const systemSchema = new mongoose.Schema({
   },
   systemType: {
     type: String,
-    enum: systemTypeValues,
     required: true
   },
   subsystem: {
