@@ -1,21 +1,8 @@
 const System = require('../models/System');
 const User = require('../models/User');
-const Group = require('../models/Group');
 const ActivityLog = require('../models/ActivityLog');
-const { SYSTEM_TYPES, SYSTEM_STATUS } = require('../config/constants');
-
-// Helper function to get required certifications
-const getRequiredCertifications = (systemType, subsystem) => {
-  const certMap = {
-    communication: ['electronics', 'rf'],
-    navigation: ['electronics', 'navigation'],
-    surveillance: ['electronics', 'radar'],
-    data_processing: ['software', 'electronics'],
-    meteorological: ['electronics', 'mechanical']
-  };
-  
-  return certMap[systemType] || ['electronics'];
-};
+const SystemType = require('../models/SystemType');
+const { SYSTEM_STATUS } = require('../config/constants');
 
 // @desc    Create CNS system
 // @route   POST /api/systems
@@ -43,27 +30,10 @@ const createSystem = async (req, res) => {
       assignedGroup
     } = req.body;
 
-    // Validate system type
-    if (!SYSTEM_TYPES[systemType.toUpperCase()]) {
+    // Validate system type against the admin-managed list (Settings > System Configuration)
+    const validType = await SystemType.findOne({ value: (systemType || '').toLowerCase() });
+    if (!validType) {
       return res.status(400).json({ message: 'Invalid system type' });
-    }
-
-    // Check certifications
-    const user = await User.findById(req.user.id).populate('group');
-    const requiredCerts = getRequiredCertifications(systemType, subsystem);
-    
-    if (assignedGroup) {
-      const group = await Group.findById(assignedGroup);
-      const hasRequiredCert = requiredCerts.every(cert => 
-        group.certifications.includes(cert) || user.certifications.includes(cert)
-      );
-      
-      if (!hasRequiredCert) {
-        return res.status(403).json({ 
-          message: 'Group or user does not have required certifications',
-          required: requiredCerts
-        });
-      }
     }
 
     const system = await System.create({
