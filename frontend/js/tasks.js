@@ -69,6 +69,9 @@ async function loadTasks(container) {
                                                     <button class="btn btn-sm btn-outline-secondary" onclick="editTask('${task._id}')">
                                                         <i class="bi bi-pencil"></i>
                                                     </button>
+                                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteTask('${task._id}')">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
                                                 ` : ''}
                                                 <button class="btn btn-sm btn-outline-${task.status === 'completed' ? 'secondary' : 'success'}" 
                                                         onclick="updateTaskStatus('${task._id}', '${task.status === 'completed' ? 'pending' : 'completed'}')">
@@ -449,5 +452,18 @@ async function handleEditTask(event, id) {
         loadTasks(document.getElementById('page-content'));
     } catch (error) {
         showToast('Error updating task: ' + error.message, 'danger');
+    }
+}
+
+// Delete task
+async function deleteTask(id) {
+    if (!confirm('Are you sure you want to delete this task?')) return;
+
+    try {
+        await API.delete(`/tasks/${id}`);
+        showToast('Task deleted successfully', 'success');
+        loadTasks(document.getElementById('page-content'));
+    } catch (error) {
+        showToast('Error deleting task: ' + error.message, 'danger');
     }
 }

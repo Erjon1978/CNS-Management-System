@@ -283,11 +283,36 @@ const getTaskStats = async (req, res) => {
   }
 };
 
+// @desc    Delete task
+// @route   DELETE /api/tasks/:id
+const deleteTask = async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.id);
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    await task.deleteOne();
+
+    await ActivityLog.create({
+      user: req.user.id,
+      action: 'TASK_DELETED',
+      details: `Task "${task.title}" deleted`,
+      ipAddress: req.ip
+    });
+
+    res.json({ message: 'Task deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createTask,
   getTasks,
   getTaskById,
   updateTask,
   updateTaskStatus,
+  deleteTask,
   getTaskStats
 };

@@ -5,6 +5,7 @@ const {
   getTaskById,
   updateTask,
   updateTaskStatus,
+  deleteTask,
   getTaskStats
 } = require('../controllers/taskController');
 const { protect, manager } = require('../middleware/auth');
@@ -21,7 +22,8 @@ router.route('/')
 
 router.route('/:id')
   .get(getTaskById)
-  .put(manager, validate(validateTask), updateTask);
+  .put(manager, validate(validateTask), updateTask)
+  .delete(manager, deleteTask);
 
 router.patch('/:id/status', updateTaskStatus);
 
